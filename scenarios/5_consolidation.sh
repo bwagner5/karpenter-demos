@@ -16,7 +16,7 @@ kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-constrained.yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -67,7 +67,10 @@ spec:
       karpenter.sh/discovery: ${CLUSTER_NAME}
 EOF
 
-cat <<EOF | kubectl apply -f -
+cmd "cat /tmp/node-pool-constrained.yaml"
+cmd "kubectl apply -f /tmp/node-pool-constrained.yaml"
+
+cat << EOF > /tmp/demo-inflate-demo-consolidation.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -100,6 +103,9 @@ spec:
             matchLabels:
               app: inflate-demo-consolidation-1
 EOF
+
+cmd "cat /tmp/demo-inflate-demo-consolidation.yaml"
+cmd "kubectl apply -f /tmp/demo-inflate-demo-consolidation.yaml"
 
 cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
@@ -233,7 +239,7 @@ spec:
           values: ["on-demand", "spot"]
         - key: kubernetes.io/arch
           operator: In
-          values: ["amd64"]
+          values: ["amd64", "arm64"]
         - key: karpenter.k8s.aws/instance-category
           operator: In
           values: ["c", "m", "r"]

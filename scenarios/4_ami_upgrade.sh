@@ -13,7 +13,7 @@ kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-ami-upgrade.yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -65,7 +65,10 @@ spec:
       karpenter.sh/discovery: ${CLUSTER_NAME}
 EOF
 
-cat <<EOF | kubectl apply -f -
+cmd "cat /tmp/node-pool-ami-upgrade.yaml"
+cmd "kubectl apply -f /tmp/node-pool-ami-upgrade.yaml"
+
+cat << EOF > /tmp/deployment-ami-upgrade.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,6 +102,8 @@ spec:
               app: inflate-demo-ami-upgrade
 EOF
 
+cmd "cat /tmp/deployment-ami-upgrade.yaml"
+cmd "kubectl apply -f /tmp/deployment-ami-upgrade.yaml"
 cmd "kubectl scale deployment inflate-demo-ami-upgrade --replicas=100"
 
 
@@ -132,7 +137,7 @@ EOF
 
 cmd "cat /tmp/demo-ami-upgrade.yaml"
 cmd "kubectl apply -f /tmp/demo-ami-upgrade.yaml"
-
+cmd "echo 'Waiting for nodes to be upgraded'"
 
 cmd "kubectl scale deployment inflate-demo-ami-upgrade --replicas=0"
 cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"

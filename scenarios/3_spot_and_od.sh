@@ -14,7 +14,7 @@ kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-default-spot-and-od.yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -66,8 +66,11 @@ spec:
       karpenter.sh/discovery: ${CLUSTER_NAME}
 EOF
 
+cmd "cat /tmp/node-pool-default-spot-and-od.yaml"
+cmd "kubectl apply -f /tmp/node-pool-default-spot-and-od.yaml"
+
 ## No capacity-type selector, so it uses Spot by default
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/deployment-default-spot-and-od.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -101,8 +104,13 @@ spec:
         whenUnsatisfiable: DoNotSchedule
 EOF
 
+cmd "cat /tmp/deployment-default-spot-and-od.yaml"
+cmd "kubectl apply -f /tmp/deployment-default-spot-and-od.yaml"
+cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=10"
+cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=0"
+
 ## Selects Spot capacity-type
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-default-spot-and-od-spot.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -138,8 +146,13 @@ spec:
         whenUnsatisfiable: DoNotSchedule
 EOF
 
-## Select ARM64
-cat <<EOF | kubectl apply -f -
+cmd "cat /tmp/deployment-default-spot-and-od-spot.yaml"
+cmd "kubectl apply -f /tmp/deployment-default-spot-and-od-spot.yaml"
+cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=10"
+cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=0"
+
+## Select OD
+cat << EOF > /tmp/node-pool-default-spot-and-od-od.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -175,8 +188,13 @@ spec:
         whenUnsatisfiable: DoNotSchedule
 EOF
 
+cmd "cat /tmp/deployment-default-spot-and-od-od.yaml"
+cmd "kubectl apply -f /tmp/deployment-default-spot-and-od-od.yaml"
+cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=10"
+cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=0"
+
 ## Spread across Spot and OD
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-default-spot-and-od-spread.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -216,18 +234,9 @@ spec:
           whenUnsatisfiable: DoNotSchedule
 EOF
 
-cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=10"
-cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
-cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=10"
-cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
-cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=10"
-cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
+cmd "cat /tmp/deployment-default-spot-and-od-spread.yaml"
+cmd "kubectl apply -f /tmp/deployment-default-spot-and-od-spread.yaml"
 cmd "kubectl scale deployment inflate-demo-spot-and-od-spread --replicas=10"
 cmd "kubectl scale deployment inflate-demo-spot-and-od-spread --replicas=0"
+
 cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"

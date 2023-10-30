@@ -14,7 +14,7 @@ kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/node-pool-multi-arch.yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -66,8 +66,11 @@ spec:
       karpenter.sh/discovery: ${CLUSTER_NAME}
 EOF
 
+cmd "cat /tmp/node-pool-multi-arch.yaml"
+cmd "kubectl apply -f /tmp/node-pool-multi-arch.yaml"
+
 ## No Arch selector (use either one)
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/deployment-multi-arch.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -101,8 +104,13 @@ spec:
         whenUnsatisfiable: DoNotSchedule
 EOF
 
+cmd "cat /tmp/deployment-multi-arch.yaml"
+cmd "kubectl apply -f /tmp/deployment-multi-arch.yaml"
+cmd "kubectl scale deployment inflate-demo-multi-arch --replicas=10"
+cmd "kubectl scale deployment inflate-demo-multi-arch --replicas=0"
+
 ## Select AMD64
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/deployment-multi-arch-amd64.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -131,8 +139,13 @@ spec:
         kubernetes.io/arch: amd64
 EOF
 
+cmd "cat /tmp/deployment-multi-arch-amd64.yaml"
+cmd "kubectl apply -f /tmp/deployment-multi-arch-amd64.yaml"
+cmd "kubectl scale deployment inflate-demo-multi-arch-amd64 --replicas=10"
+cmd "kubectl scale deployment inflate-demo-multi-arch-amd64 --replicas=0"
+
 ## Select ARM64
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/deployment-multi-arch-arm64.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -161,8 +174,13 @@ spec:
         kubernetes.io/arch: arm64
 EOF
 
+cmd "cat /tmp/deployment-multi-arch-arm64.yaml"
+cmd "kubectl apply -f /tmp/deployment-multi-arch-arm64.yaml"
+cmd "kubectl scale deployment inflate-demo-multi-arch-arm64 --replicas=10"
+cmd "kubectl scale deployment inflate-demo-multi-arch-arm64 --replicas=0"
+
 ## Prefer ARM64 but fallback to AMD64
-cat <<EOF | kubectl apply -f -
+cat << EOF > /tmp/deployment-multi-arch-prefer.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -213,18 +231,10 @@ spec:
                 - arm64
 EOF
 
-cmd "kubectl scale deployment inflate-demo-multi-arch --replicas=10"
-cmd "kubectl scale deployment inflate-demo-multi-arch --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
-cmd "kubectl scale deployment inflate-demo-multi-arch-amd64 --replicas=10"
-cmd "kubectl scale deployment inflate-demo-multi-arch-amd64 --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
-cmd "kubectl scale deployment inflate-demo-multi-arch-arm64 --replicas=10"
-cmd "kubectl scale deployment inflate-demo-multi-arch-arm64 --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
-
+cmd "cat /tmp/deployment-multi-arch-prefer.yaml"
+cmd "kubectl apply -f /tmp/deployment-multi-arch-prefer.yaml"
 cmd "kubectl scale deployment inflate-demo-multi-arch-prefer-arm64 --replicas=10"
 cmd "kubectl scale deployment inflate-demo-multi-arch-prefer-arm64 --replicas=0"
+
+
 cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
