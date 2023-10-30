@@ -9,9 +9,9 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##  - Opinionated defaults (CMR > gen 2, EKS Optimized AMI, No Consolidation)
 
 ## Clean-up previous demo resources
-kubectl delete all -l demo > /dev/null 2>&1
 kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl delete all -l demo > /dev/null 2>&1:
 
 cat <<EOF | kubectl apply -f -
 apiVersion: karpenter.sh/v1beta1

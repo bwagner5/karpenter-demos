@@ -12,9 +12,9 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##    - Add Spot
 
 ## Clean-up previous demo resources
-kubectl delete all -l demo > /dev/null 2>&1
 kubectl delete nodepool default > /dev/null 2>&1 || :
 kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl delete all -l demo > /dev/null 2>&1
 
 cat <<EOF | kubectl apply -f -
 apiVersion: karpenter.sh/v1beta1
@@ -25,7 +25,7 @@ metadata:
     demo: demo-consolidation
 spec:
   disruption:
-    consolidationPolicy: WhenUnderUtilized
+    consolidationPolicy: WhenUnderutilized
     expireAfter: Never
   template:
     metadata:
@@ -71,18 +71,18 @@ cat <<EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: inflate-demo-consolidation
+  name: inflate-demo-consolidation-1
   labels:
     demo: demo-consolidation
 spec:
   selector:
     matchLabels:
-      app: inflate-demo-consolidation
+      app: inflate-demo-consolidation-1
   replicas: 0
   template:
     metadata:
       labels:
-        app: inflate-demo-consolidation
+        app: inflate-demo-consolidation-1
         demo: demo-consolidation
     spec:
       containers:
@@ -98,14 +98,82 @@ spec:
           whenUnsatisfiable: DoNotSchedule
           labelSelector:
             matchLabels:
-              app: inflate-demo-consolidation
+              app: inflate-demo-consolidation-1
 EOF
 
-cmd "kubectl scale deployment inflate-demo-consolidation --replicas=300"
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflate-demo-consolidation-2
+  labels:
+    demo: demo-consolidation
+spec:
+  selector:
+    matchLabels:
+      app: inflate-demo-consolidation-2
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: inflate-demo-consolidation-2
+        demo: demo-consolidation
+    spec:
+      containers:
+      - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+        name: inflate-demo-consolidation
+        resources:
+          requests:
+            cpu: "1"
+            memory: 256M
+      topologySpreadConstraints:
+        - maxSkew: 3
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: inflate-demo-consolidation-2
+EOF
 
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflate-demo-consolidation-3
+  labels:
+    demo: demo-consolidation
+spec:
+  selector:
+    matchLabels:
+      app: inflate-demo-consolidation-3
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: inflate-demo-consolidation-3
+        demo: demo-consolidation
+    spec:
+      containers:
+      - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+        name: inflate-demo-consolidation
+        resources:
+          requests:
+            cpu: "1"
+            memory: 256M
+      topologySpreadConstraints:
+        - maxSkew: 3
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: inflate-demo-consolidation-3
+EOF
+
+cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=100"
+cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=100"
+cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=100"
 
 cat << EOF > /tmp/demo-consolidation-arm64.yaml
-cat <<EOF | kubectl apply -f -
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -114,7 +182,7 @@ metadata:
     demo: demo-consolidation
 spec:
   disruption:
-    consolidationPolicy: WhenUnderUtilized
+    consolidationPolicy: WhenUnderutilized
     expireAfter: Never
   template:
     metadata:
@@ -144,7 +212,6 @@ cmd "cat /tmp/demo-consolidation-arm64.yaml"
 cmd "kubectl apply -f /tmp/demo-consolidation-arm64.yaml"
 
 cat << EOF > /tmp/demo-consolidation-spot.yaml
-cat <<EOF | kubectl apply -f -
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
 metadata:
@@ -153,7 +220,7 @@ metadata:
     demo: demo-consolidation
 spec:
   disruption:
-    consolidationPolicy: WhenUnderUtilized
+    consolidationPolicy: WhenUnderutilized
     expireAfter: Never
   template:
     metadata:
@@ -182,5 +249,7 @@ EOF
 cmd "cat /tmp/demo-consolidation-spot.yaml"
 cmd "kubectl apply -f /tmp/demo-consolidation-spot.yaml"
 
-cmd "kubectl scale deployment inflate-demo-consolidation --replicas=0"
-cmd "kubectl delete nodes -l 'karpenter.sh/provisioner-name'"
+cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=0"
+cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=0"
+cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=0"
+cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"
