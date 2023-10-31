@@ -9,8 +9,8 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##  - Rolls nodes with new AMI
 
 ## Clean-up previous demo resources
-kubectl delete nodepool default > /dev/null 2>&1 || :
-kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl get nodepool --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete nodepool > /dev/null 2>&1 || :
+kubectl get ec2nodeclass --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete ec2nodeclass > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
 cat << EOF > /tmp/node-pool-ami-upgrade.yaml
@@ -104,7 +104,7 @@ EOF
 
 cmd "cat /tmp/deployment-ami-upgrade.yaml"
 cmd "kubectl apply -f /tmp/deployment-ami-upgrade.yaml"
-cmd "kubectl scale deployment inflate-demo-ami-upgrade --replicas=100"
+cmd "kubectl scale deployment inflate-demo-ami-upgrade --replicas=10"
 
 
 ## Retrieve different AMI IDs to "upgrade" to

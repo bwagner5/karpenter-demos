@@ -12,8 +12,8 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##  - Set the next NodePool as a general purpose overflow after the Savings Plans/RIs have been used
 
 ## Clean-up previous demo resources
-kubectl delete nodepool default > /dev/null 2>&1 || :
-kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl get nodepool --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete nodepool > /dev/null 2>&1 || :
+kubectl get ec2nodeclass --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete ec2nodeclass > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
 cat << EOF > /tmp/node-pool-default.yaml
@@ -145,8 +145,6 @@ cmd "kubectl scale deployment inflate-demo-weights-1 --replicas=100"
 cmd "kubectl get nodepool sp -o yaml | less"
 
 cmd "kubectl scale deployment inflate-demo-weights-1 --replicas=0"
-cmd "kubectl scale deployment inflate-demo-weights-2 --replicas=0"
-cmd "kubectl scale deployment inflate-demo-weights-3 --replicas=0"
 
 
 cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"

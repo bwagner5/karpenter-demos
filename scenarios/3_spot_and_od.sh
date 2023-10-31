@@ -10,8 +10,8 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##  - Spot interruptions are handled by Karpenter
 
 ## Clean-up previous demo resources
-kubectl delete nodepool default > /dev/null 2>&1 || :
-kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl get nodepool --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete nodepool > /dev/null 2>&1 || :
+kubectl get ec2nodeclass --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete ec2nodeclass > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
 cat << EOF > /tmp/node-pool-default-spot-and-od.yaml
@@ -110,7 +110,7 @@ cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=10"
 cmd "kubectl scale deployment inflate-demo-spot-and-od --replicas=0"
 
 ## Selects Spot capacity-type
-cat << EOF > /tmp/node-pool-default-spot-and-od-spot.yaml
+cat << EOF > /tmp/deployment-default-spot-and-od-spot.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -152,7 +152,7 @@ cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=10"
 cmd "kubectl scale deployment inflate-demo-spot-and-od-spot --replicas=0"
 
 ## Select OD
-cat << EOF > /tmp/node-pool-default-spot-and-od-od.yaml
+cat << EOF > /tmp/deployment-default-spot-and-od-od.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -194,7 +194,7 @@ cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=10"
 cmd "kubectl scale deployment inflate-demo-spot-and-od-od --replicas=0"
 
 ## Spread across Spot and OD
-cat << EOF > /tmp/node-pool-default-spot-and-od-spread.yaml
+cat << EOF > /tmp/deployment-default-spot-and-od-spread.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -12,8 +12,8 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##    - Add Spot
 
 ## Clean-up previous demo resources
-kubectl delete nodepool default > /dev/null 2>&1 || :
-kubectl delete ec2nodeclass default > /dev/null 2>&1 || :
+kubectl get nodepool --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete nodepool > /dev/null 2>&1 || :
+kubectl get ec2nodeclass --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete ec2nodeclass > /dev/null 2>&1 || :
 kubectl delete all -l demo > /dev/null 2>&1
 
 cat << EOF > /tmp/node-pool-constrained.yaml
@@ -95,13 +95,6 @@ spec:
           requests:
             cpu: "1"
             memory: 256M
-      topologySpreadConstraints:
-        - maxSkew: 3
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: inflate-demo-consolidation-1
 EOF
 
 cmd "cat /tmp/demo-inflate-demo-consolidation.yaml"
@@ -132,13 +125,6 @@ spec:
           requests:
             cpu: "1"
             memory: 256M
-      topologySpreadConstraints:
-        - maxSkew: 3
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: inflate-demo-consolidation-2
 EOF
 
 cat <<EOF | kubectl apply -f -
@@ -166,18 +152,11 @@ spec:
           requests:
             cpu: "1"
             memory: 256M
-      topologySpreadConstraints:
-        - maxSkew: 3
-          topologyKey: topology.kubernetes.io/zone
-          whenUnsatisfiable: DoNotSchedule
-          labelSelector:
-            matchLabels:
-              app: inflate-demo-consolidation-3
 EOF
 
-cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=100"
-cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=100"
-cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=100"
+cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=50"
+cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=50"
+cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=50"
 
 cat << EOF > /tmp/demo-consolidation-arm64.yaml
 apiVersion: karpenter.sh/v1beta1
