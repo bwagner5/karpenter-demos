@@ -13,5 +13,6 @@ function cmd() {
         echo -e "\n"
         eval $cmd
         echo -e "\n"
+        read -n 1 -s
     fi
 }

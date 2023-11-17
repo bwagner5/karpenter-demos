@@ -10,6 +10,8 @@ source "${SCRIPTPATH}/../lib/utils.sh"
 ##    - Start with OD amd64
 ##    - Add arm64
 ##    - Add Spot
+## - Pod Overrides
+##    - Most of my workloads are flexible, but some need specific requirements
 
 ## Clean-up previous demo resources
 kubectl get nodepool --no-headers | tr -s " " | cut -d " " -f1 | xargs kubectl delete nodepool > /dev/null 2>&1 || :
@@ -127,36 +129,8 @@ spec:
             memory: 256M
 EOF
 
-cat <<EOF | kubectl apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: inflate-demo-consolidation-3
-  labels:
-    demo: demo-consolidation
-spec:
-  selector:
-    matchLabels:
-      app: inflate-demo-consolidation-3
-  replicas: 0
-  template:
-    metadata:
-      labels:
-        app: inflate-demo-consolidation-3
-        demo: demo-consolidation
-    spec:
-      containers:
-      - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
-        name: inflate-demo-consolidation
-        resources:
-          requests:
-            cpu: "1"
-            memory: 256M
-EOF
-
 cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=50"
 cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=50"
-cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=50"
 
 cat << EOF > /tmp/demo-consolidation-arm64.yaml
 apiVersion: karpenter.sh/v1beta1
@@ -234,7 +208,42 @@ EOF
 cmd "cat /tmp/demo-consolidation-spot.yaml"
 cmd "kubectl apply -f /tmp/demo-consolidation-spot.yaml"
 
+cat << EOF > /tmp/deployment-pod-override-instance-type.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inflate-demo-pod-override-instance-type
+  labels:
+    demo: demo-pod-overrides
+spec:
+  selector:
+    matchLabels:
+      app: inflate-demo-pod-override-instance-type
+  replicas: 0
+  template:
+    metadata:
+      labels:
+        app: inflate-demo-pod-override-instance-type
+        demo: demo-pod-overrides
+    spec:
+      containers:
+      - image: public.ecr.aws/eks-distro/kubernetes/pause:3.7
+        name: inflate-demo-pod-overrides
+        resources:
+          requests:
+            cpu: "1"
+            memory: 256M
+      nodeSelector:
+        node.kubernetes.io/instance-type: c4.xlarge
+        karpenter.sh/capacity-type: on-demand
+EOF
+
+cmd "cat /tmp/deployment-pod-override-instance-type.yaml"
+cmd "kubectl apply -f /tmp/deployment-pod-override-instance-type.yaml"
+cmd "kubectl scale deployment inflate-demo-pod-override-instance-type --replicas=10"
+cmd "kubectl scale deployment inflate-demo-pod-override-instance-type --replicas=0"
+
 cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=0"
 cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=0"
-cmd "kubectl scale deployment inflate-demo-consolidation-3 --replicas=0"
+
 cmd "kubectl delete nodes -l 'karpenter.sh/nodepool'"

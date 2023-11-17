@@ -88,8 +88,12 @@ cat << EOF > /tmp/deployment-ahem.yaml
          app: ahem
          demo: demo-spot-interruption
      spec:
+       terminationGracePeriodSeconds: 45
        containers:
        - image: public.ecr.aws/brandonwagner/ahem:v0.0.3
+         env:
+          - name: delay
+            value: "40s"
          name: ahem
          resources:
            requests:
@@ -108,8 +112,6 @@ cmd "cat /tmp/deployment-ahem.yaml"
 cmd "kubectl apply -f /tmp/deployment-ahem.yaml"
 
 cmd "kubectl scale deployment ahem --replicas=10"
-
-sleep 10
 
 cmd "ec2-spot-interrupter --interactive"
 
