@@ -132,6 +132,8 @@ EOF
 cmd "kubectl scale deployment inflate-demo-consolidation-1 --replicas=50"
 cmd "kubectl scale deployment inflate-demo-consolidation-2 --replicas=50"
 
+input_cmd "AMD_OD_COST="
+
 cat << EOF > /tmp/demo-consolidation-arm64.yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -169,6 +171,9 @@ EOF
 
 cmd "cat /tmp/demo-consolidation-arm64.yaml"
 cmd "kubectl apply -f /tmp/demo-consolidation-arm64.yaml"
+
+input_cmd "ARM_OD_COST="
+cmd "echo \"1 - \$ARM_OD_COST / \$AMD_OD_COST \" | bc -l "
 
 cat << EOF > /tmp/demo-consolidation-spot.yaml
 apiVersion: karpenter.sh/v1beta1
@@ -208,6 +213,10 @@ EOF
 cmd "cat /tmp/demo-consolidation-spot.yaml"
 cmd "kubectl apply -f /tmp/demo-consolidation-spot.yaml"
 
+input_cmd "SPOT_COST="
+cmd "echo \"1 - \$SPOT_COST / \$ARM_OD_COST\" | bc -l "
+cmd "echo \"1 - \$SPOT_COST / \$AMD_OD_COST\" | bc -l "
+
 cat << EOF > /tmp/deployment-pod-override-instance-type.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -234,7 +243,7 @@ spec:
             cpu: "1"
             memory: 256M
       nodeSelector:
-        node.kubernetes.io/instance-type: c4.xlarge
+        node.kubernetes.io/instance-type: c5.xlarge
         karpenter.sh/capacity-type: on-demand
 EOF
 

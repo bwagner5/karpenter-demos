@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
 ## 10-100
 SPEED=30
 
@@ -14,5 +13,16 @@ function cmd() {
         eval $cmd
         echo -e "\n"
         read -n 1 -s
+    fi
+}
+
+function input_cmd() {
+    local cmd="${1}"
+    if [[ ! -z ${cmd} ]]; then
+        echo -e "\n"
+        echo -en "> ${cmd}" | pv -qL "${SPEED}"
+        read user_input
+        echo $user_input
+        eval "${cmd}${user_input}"
     fi
 }
